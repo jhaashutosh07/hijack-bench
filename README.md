@@ -26,7 +26,8 @@ benign task utility? It runs entirely on **free-tier APIs / no GPU**, and ships 
 Scenario (benign task + {INJECTION} in untrusted content + planted secret)
    │  render(attack_type)
    ▼
-Defense wrapper (none | datamark | … )        ← system suffix · tool-output transform · call authorization
+Defense wrapper (none | datamark | instruction_hierarchy | sanitizer | privilege_gate)
+   │                                    ↑ system suffix · tool-output transform · call authorization
    ▼
 ReAct loop  ──▶ tools: read_url / read_file / list_records + SINK: send_email / http_post (simulated)
    ▼
@@ -46,9 +47,21 @@ pip install -r requirements.txt
 
 python -m hijackbench list                           # show scenarios + defenses
 python -m hijackbench run --provider mock --report   # run offline, then write the report
-python -m hijackbench report                         # regenerate leaderboard + plots
-pytest -q                                            # graders + full mock e2e
+python -m hijackbench attack --target mock \          # adaptive attacker vs each defense
+  --defenses datamark,sanitizer,privilege_gate
+python -m hijackbench report                          # regenerate leaderboard + plots
+pytest -q                                             # 67 tests: graders, defenses, attacker, e2e
 ```
+
+Sample output (mock illustration, **not** findings) lives in
+[`docs/sample_mock_run/`](docs/sample_mock_run/); the findings writeup template is
+[`REPORT.md`](REPORT.md).
+
+**The five defenses:** `none` (baseline) · `datamark` (data-marking) ·
+`instruction_hierarchy` (prompt-only) · `sanitizer` (content redaction) ·
+`privilege_gate` (structural allowlist on sinks). The adaptive attacker
+([`hijackbench/attacker/`](hijackbench/attacker/)) shows the expected contrast: content/prompt
+defenses fall to obfuscation, structural gating holds.
 
 The offline mock is scripted to obey a *visible* injected instruction but respect a data-marking
 envelope — so out of the box you see the money graph: **`none` → ASR 1.0, `datamark` → ASR 0.0, utility
@@ -85,10 +98,16 @@ anything — the runner is resumable (re-running skips completed cells) and hono
 
 ## Status / roadmap
 
-- **M1 (this release):** offline mock + Groq provider, ReAct agent + simulated sinks, 3 seed scenarios
-  (web / file / tool vectors), `none` + `datamark` defenses, hijack + utility graders, budget-aware
-  resumable runner with `--dry-run`, report (leaderboard + ASR bars + tradeoff scatter), tests.
-- **M2:** ~12 scenarios, Gemini + a second free tier, **model-scale axis (8B→32B→70B)**, baseline leaderboard.
-- **M3:** `instruction_hierarchy` / `sanitizer` / `privilege_gate` defenses + the **automated adaptive
-  attacker**; headline artifacts = ASR-reduction × utility-cost scatter and defense-ranking-vs-scale.
-- **M4:** writeup + demo.
+**The code for M1–M4 is complete and offline-verified (67 passing tests). The one remaining
+step is running the suite against live models to populate real numbers** — that needs a
+free Groq/Gemini key and is a single command (see above / `REPORT.md`).
+
+- **M1 ✅** offline mock + Groq provider, ReAct agent + simulated sinks, seed scenarios,
+  hijack + utility graders, budget-aware resumable runner with `--dry-run`, report, tests.
+- **M2 ✅ (code)** 12 scenarios across web/file/tool, Gemini provider, **model-scale axis
+  (8B→32B→70B)** recorded per run + reported. *Findings pending a key.*
+- **M3 ✅ (code)** all 5 defenses + the **automated adaptive attacker** (`attack` subcommand,
+  LLM or scripted); ASR-reduction × utility-cost scatter + defense-ranking-by-scale table.
+  *Findings pending a key.*
+- **M4 ✅ (scaffold)** `REPORT.md` findings template, `LICENSE`, committed sample artifacts.
+  Optional later: a small Streamlit/HF Space demo.

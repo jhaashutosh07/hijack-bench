@@ -80,6 +80,42 @@ def cmd_run(args) -> int:
     return 0
 
 
+def _build_attacker(spec: str):
+    from .attacker import ScriptedAttacker, LLMAttacker
+    if spec == "scripted":
+        return ScriptedAttacker()
+    if spec.startswith("llm:"):
+        from .providers.registry import build_provider
+        return LLMAttacker(build_provider(spec[len("llm:"):]))
+    raise ValueError(f"unknown attacker {spec!r}; use 'scripted' or 'llm:<provider-spec>'")
+
+
+def cmd_attack(args) -> int:
+    from .attacker import run_adaptive
+    scenarios = _select_scenarios(args.scenarios)
+    defenses = _split(args.defenses)
+    attacker = _build_attacker(args.attacker)
+
+    print(f"Adaptive attack — target={args.target} attacker={args.attacker} "
+          f"rounds={args.rounds}\n")
+    held, fell = 0, 0
+    rows = []
+    for sc in scenarios:
+        for d in defenses:
+            res = run_adaptive(args.target, sc, d, attacker,
+                               max_rounds=args.rounds, log=(print if args.verbose else None))
+            status = f"BROKEN in {res.rounds_used} round(s)" if res.broken else "held"
+            fell += res.broken
+            held += (not res.broken)
+            rows.append((sc.id, d, status))
+            print(f"  {sc.id:26s} | {d:22s} | {status}")
+    print(f"\nSummary: {fell} defense-cells broken, {held} held "
+          f"(across {len(scenarios)} scenarios × {len(defenses)} defenses).")
+    print("Interpretation: content/prompt defenses tend to fall to an adaptive attacker; "
+          "structural gating tends to hold.")
+    return 0
+
+
 def cmd_report(args) -> int:
     if not os.path.exists(args.infile):
         print(f"No results file at {args.infile}. Run `hijackbench run` first.")
@@ -113,6 +149,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_run.add_argument("--dry-run", action="store_true", help="estimate request budget without running")
     p_run.add_argument("--report", action="store_true", help="write report artifacts after the run")
     p_run.set_defaults(func=cmd_run)
+
+    p_atk = sub.add_parser("attack", help="run the adaptive attacker against defended targets")
+    p_atk.add_argument("--target", default="mock", help="target provider spec (default: mock)")
+    p_atk.add_argument("--attacker", default="scripted",
+                       help="'scripted' (offline) or 'llm:<provider-spec>'")
+    p_atk.add_argument("--defenses", default="datamark,sanitizer,privilege_gate",
+                       help="comma-separated defenses to attack")
+    p_atk.add_argument("--scenarios", default=None)
+    p_atk.add_argument("--rounds", type=int, default=5)
+    p_atk.add_argument("--verbose", action="store_true", help="log each attack round")
+    p_atk.set_defaults(func=cmd_attack)
 
     p_rep = sub.add_parser("report", help="aggregate results into a leaderboard + plots")
     p_rep.add_argument("--in", dest="infile", default=DEFAULT_OUT)

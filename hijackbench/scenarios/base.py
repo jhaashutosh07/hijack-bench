@@ -38,5 +38,10 @@ class Scenario:
             rendered[key] = (text or "").replace(INJECTION_PLACEHOLDER, payload)
         return rendered
 
+    def render_payload(self, payload: str) -> dict:
+        """Render resources with an arbitrary payload substituted for {INJECTION}.
+        Used by the adaptive attacker to test attacker-generated payloads."""
+        return {k: (t or "").replace(INJECTION_PLACEHOLDER, payload) for k, t in self.resources.items()}
+
     def available_attacks(self) -> list[str]:
         return list(self.injections.keys())

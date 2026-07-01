@@ -1,12 +1,16 @@
 from .base import Defense
 from .none import NoDefense
 from .datamark import DataMarkDefense
+from .instruction_hierarchy import InstructionHierarchyDefense
+from .sanitizer import SanitizerDefense
+from .privilege_gate import PrivilegeGateDefense
 
-# Registry of defenses available in M1. M2/M3 add: instruction_hierarchy, sanitizer,
-# privilege_gate (+ the automated adaptive attacker).
 DEFENSES: dict[str, type[Defense]] = {
     "none": NoDefense,
     "datamark": DataMarkDefense,
+    "instruction_hierarchy": InstructionHierarchyDefense,
+    "sanitizer": SanitizerDefense,
+    "privilege_gate": PrivilegeGateDefense,
 }
 
 
@@ -16,4 +20,5 @@ def build_defense(name: str) -> Defense:
     return DEFENSES[name]()
 
 
-__all__ = ["Defense", "NoDefense", "DataMarkDefense", "DEFENSES", "build_defense"]
+__all__ = ["Defense", "NoDefense", "DataMarkDefense", "InstructionHierarchyDefense",
+           "SanitizerDefense", "PrivilegeGateDefense", "DEFENSES", "build_defense"]

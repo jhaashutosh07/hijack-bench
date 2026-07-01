@@ -32,6 +32,17 @@ def render_markdown(agg: dict) -> str:
                 f"{'—' if asr_red is None else f'{asr_red:+.2f}'} "
                 f"| {'—' if util_cost is None else f'{util_cost:+.2f}'} |"
             )
+
+    # Defense-effectiveness by model scale (the pre-committed open question).
+    scales = agg.get("scales", [])
+    if len(scales) > 1 or (scales and scales[0] != "mock"):
+        lines += ["", "## ASR by model scale × defense",
+                  "_Does the defense ranking change with model scale? (ASR; lower is better.)_", "",
+                  "| scale | " + " | ".join(agg["defenses"]) + " |",
+                  "|---|" + "|".join(["---"] * len(agg["defenses"])) + "|"]
+        for sc in scales:
+            cells = [_fmt(agg["by_scale"][sc][d]["asr"]).strip() for d in agg["defenses"]]
+            lines.append(f"| {sc} | " + " | ".join(cells) + " |")
     return "\n".join(lines) + "\n"
 
 

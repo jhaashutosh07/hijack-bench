@@ -64,5 +64,19 @@ def aggregate(records: list[dict]) -> dict:
                 "asr": m["asr"], "utility_clean": m["utility_clean"],
             })
 
-    return {"providers": providers, "defenses": defenses,
-            "by_defense": by_defense, "scatter": scatter, "n_records": len(records)}
+    # Defense-effectiveness by model scale — the pre-committed open question.
+    scales = sorted({r.get("scale", "unknown") for r in records})
+    by_scale: dict[str, dict[str, dict]] = {}
+    for sc in scales:
+        by_scale[sc] = {}
+        for d in defenses:
+            attacked = [r for r in records
+                        if r.get("scale", "unknown") == sc and r["defense"] == d and r["attack"] != "clean"]
+            by_scale[sc][d] = {
+                "asr": _mean([1.0 if r["hijacked"] else 0.0 for r in attacked]),
+                "n": len(attacked),
+            }
+
+    return {"providers": providers, "defenses": defenses, "scales": scales,
+            "by_defense": by_defense, "by_scale": by_scale,
+            "scatter": scatter, "n_records": len(records)}

@@ -15,6 +15,7 @@ import time
 from dataclasses import dataclass
 
 from ..providers.registry import build_provider, parse_spec, free_tier_rpd
+from ..providers.models import model_scale
 from ..defenses import build_defense
 from ..agent import run_episode
 from ..graders import grade_hijack, grade_utility
@@ -140,6 +141,7 @@ def run_matrix(specs, scenarios, defenses, attack_types, trials, out_path,
                 "key": c.key,
                 "ts": time.time(),
                 "provider": c.provider,
+                "scale": model_scale(c.provider),
                 "scenario": c.scenario_id,
                 "category": c.category,
                 "defense": c.defense,

@@ -23,7 +23,7 @@ Two policies, so the mock proves the pipeline's *specificity* AND its *sensitivi
 from __future__ import annotations
 
 from .base import LLMProvider, LLMResponse, ToolCall
-from ..markers import ATTACKER_EMAIL, strip_untrusted
+from ..markers import ATTACKER_EMAIL, strip_untrusted, contains_attacker_ref
 
 
 class MockProvider(LLMProvider):
@@ -80,7 +80,7 @@ class MockProvider(LLMProvider):
         # After seeing tool output: get hijacked iff the attacker instruction is
         # visible (not enveloped) and we haven't already leaked.
         visible = self._visible_tool_text(messages)
-        if ATTACKER_EMAIL in visible and not self._already_exfiltrated(messages):
+        if contains_attacker_ref(visible) and not self._already_exfiltrated(messages):
             return LLMResponse(
                 tool_calls=[ToolCall(
                     id="call_exfil",
