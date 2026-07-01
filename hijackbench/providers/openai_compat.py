@@ -19,7 +19,7 @@ BACKENDS = {
 
 
 class OpenAICompatProvider(LLMProvider):
-    def __init__(self, backend: str, model: str, timeout: float = 60.0):
+    def __init__(self, backend: str, model: str, timeout: float = 60.0, max_retries: int = 5):
         if backend not in BACKENDS:
             raise ValueError(f"unknown backend {backend!r}; known: {list(BACKENDS)}")
         base_url, env_var, rpd = BACKENDS[backend]
@@ -36,22 +36,36 @@ class OpenAICompatProvider(LLMProvider):
         self.api_key = api_key
         self.requests_per_day = rpd
         self.timeout = timeout
+        self.max_retries = max_retries
 
     def chat(self, messages, tools=None, temperature: float = 0.0) -> LLMResponse:
+        import time
         import requests  # imported lazily so the package imports without the dep at rest
 
         payload: dict = {"model": self.model, "messages": messages, "temperature": temperature}
         if tools:
             payload["tools"] = tools
             payload["tool_choice"] = "auto"
-        resp = requests.post(
-            f"{self.base_url}/chat/completions",
-            headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"},
-            json=payload,
-            timeout=self.timeout,
-        )
-        resp.raise_for_status()
-        data = resp.json()
+
+        # Retry on rate-limit (429) and transient 5xx, honoring Retry-After.
+        last_exc = None
+        for attempt in range(self.max_retries):
+            resp = requests.post(
+                f"{self.base_url}/chat/completions",
+                headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"},
+                json=payload,
+                timeout=self.timeout,
+            )
+            if resp.status_code in (429, 500, 502, 503, 529):
+                wait = float(resp.headers.get("retry-after", 0)) or min(2 ** attempt, 30)
+                last_exc = RuntimeError(f"{resp.status_code} from {self.backend}: {resp.text[:200]}")
+                time.sleep(wait)
+                continue
+            resp.raise_for_status()
+            data = resp.json()
+            break
+        else:
+            raise last_exc or RuntimeError("exhausted retries")
         msg = data["choices"][0]["message"]
         usage = data.get("usage", {})
 

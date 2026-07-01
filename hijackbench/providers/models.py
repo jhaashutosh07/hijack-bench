@@ -9,11 +9,14 @@ the report can group ASR/defense-effectiveness by 8B → 32B → 70B.
 from __future__ import annotations
 
 # spec -> {"scale": label, "params_b": approx billions, "family": str}
+# Groq model IDs verified against the live /models list (2026-07).
 KNOWN_MODELS: dict[str, dict] = {
     "groq:llama-3.1-8b-instant":   {"scale": "8B",  "params_b": 8,   "family": "llama-3.1"},
-    "groq:qwen-qwq-32b":           {"scale": "32B", "params_b": 32,  "family": "qwen-qwq"},
+    "groq:qwen/qwen3-32b":         {"scale": "32B", "params_b": 32,  "family": "qwen3"},
     "groq:llama-3.3-70b-versatile":{"scale": "70B", "params_b": 70,  "family": "llama-3.3"},
-    "groq:llama-4-scout-17b-16e-instruct": {"scale": "17Bx16", "params_b": 17, "family": "llama-4-scout"},
+    "groq:meta-llama/llama-4-scout-17b-16e-instruct": {"scale": "17Bx16", "params_b": 17, "family": "llama-4-scout"},
+    "groq:openai/gpt-oss-20b":     {"scale": "20B", "params_b": 20,  "family": "gpt-oss"},
+    "groq:openai/gpt-oss-120b":    {"scale": "120B", "params_b": 120, "family": "gpt-oss"},
     "gemini:gemini-1.5-flash":     {"scale": "flash", "params_b": None, "family": "gemini-1.5"},
     "gemini:gemini-2.0-flash":     {"scale": "flash", "params_b": None, "family": "gemini-2.0"},
     "openai:gpt-4o-mini":          {"scale": "frontier", "params_b": None, "family": "openai (PAID)"},
@@ -22,10 +25,10 @@ KNOWN_MODELS: dict[str, dict] = {
     "mock:leaky":                  {"scale": "mock", "params_b": None, "family": "mock"},
 }
 
-# A ready-made model-scale sweep for `--provider`.
+# A ready-made model-scale sweep for `--provider` (8B -> 32B -> 70B).
 RECOMMENDED_SUITE = [
     "groq:llama-3.1-8b-instant",
-    "groq:qwen-qwq-32b",
+    "groq:qwen/qwen3-32b",
     "groq:llama-3.3-70b-versatile",
 ]
 
