@@ -16,6 +16,8 @@ KNOWN_MODELS: dict[str, dict] = {
     "groq:llama-4-scout-17b-16e-instruct": {"scale": "17Bx16", "params_b": 17, "family": "llama-4-scout"},
     "gemini:gemini-1.5-flash":     {"scale": "flash", "params_b": None, "family": "gemini-1.5"},
     "gemini:gemini-2.0-flash":     {"scale": "flash", "params_b": None, "family": "gemini-2.0"},
+    "openai:gpt-4o-mini":          {"scale": "frontier", "params_b": None, "family": "openai (PAID)"},
+    "openai:gpt-4o":               {"scale": "frontier", "params_b": None, "family": "openai (PAID)"},
     "mock":                        {"scale": "mock", "params_b": None, "family": "mock"},
     "mock:leaky":                  {"scale": "mock", "params_b": None, "family": "mock"},
 }

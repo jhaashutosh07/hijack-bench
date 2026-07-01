@@ -8,11 +8,13 @@ import os
 
 from .base import LLMProvider, LLMResponse, ToolCall
 
-# Known OpenAI-compatible free tiers: base_url, env var, free-tier RPD cap.
+# OpenAI-compatible backends: base_url, env var, free-tier RPD cap.
+# NOTE: `openai` is a PAID frontier-reference backend (no free tier) — optional.
 BACKENDS = {
     "groq": ("https://api.groq.com/openai/v1", "GROQ_API_KEY", 1000),
     "openrouter": ("https://openrouter.ai/api/v1", "OPENROUTER_API_KEY", None),
     "cerebras": ("https://api.cerebras.ai/v1", "CEREBRAS_API_KEY", None),
+    "openai": ("https://api.openai.com/v1", "OPENAI_API_KEY", None),
 }
 
 
